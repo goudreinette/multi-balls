@@ -1,0 +1,79 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+
+
+<script>
+    let x 
+    let y
+    let vx = 0
+    let vy = 0
+    let acc = 1
+    let drag = 0.95
+    let color
+
+    let otherplayers = {}
+
+
+    function setup() {
+        x = random(100, innerWidth - 100)
+        y = random(100, innerHeight - 100)
+        color = `hsl(${floor(random(360))}, 50%, 50%)`
+
+        createCanvas(innerWidth, innerHeight)
+
+        socket = io()
+
+        socket.on('players', players => {
+            otherplayers = players
+        })
+
+        socket.on('player-changed', player => {
+            let [id, data] = player
+            otherplayers[id] = data
+        })
+    }
+
+
+
+
+    function draw() {
+        background('white')
+        noStroke()
+
+        // movement
+        if (keyIsDown(LEFT_ARROW)) vx -= acc
+        if (keyIsDown(RIGHT_ARROW)) vx += acc
+        if (keyIsDown(UP_ARROW)) vy -= acc;
+        if (keyIsDown(DOWN_ARROW)) vy += acc;
+
+        x += vx
+        y += vy
+
+        vx *= drag
+        vy *= drag
+
+        socket.emit('player-changed', {x, y, color})
+
+        
+        // yourself
+        fill(color)
+        ellipse(x, y, 50)
+
+
+        // other players
+        for (const player of Object.values(otherplayers)) {
+            fill(player.color)
+            ellipse(player.x, player.y, 50)
+        }
+    }
+</script>
+
+
+
+<style>
+    canvas, body, html {
+        height: 100vh;
+        width: 100vw;
+        margin: 0;
+    }
+</style>
